@@ -82,6 +82,7 @@ class AXI4LiteMaster(BusDriver):
             if self.bus.AWREADY.value:
                 break
             await RisingEdge(self.clock)
+        raise TypeError
         await RisingEdge(self.clock)
         self.bus.AWVALID <= 0
         self.write_address_busy.release()
@@ -152,8 +153,6 @@ class AXI4LiteMaster(BusDriver):
             await RisingEdge(self.clock)
 
         await RisingEdge(self.clock)
-        import pdb; pdb.set_trace()
-        raise TypeError
 
         if int(result):
             raise AXIProtocolError("Write to address 0x%08x failed with BRESP: %d"
