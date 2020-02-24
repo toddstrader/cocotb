@@ -107,7 +107,7 @@ class AXI4LiteMaster(BusDriver):
         self.write_data_busy.release()
 
     @cocotb.coroutine
-    def write(self, address, value, byte_enable=0xf, address_latency=0,
+    async def write(self, address, value, byte_enable=0xf, address_latency=0,
               data_latency=0, sync=True):
         """Write a value to an address.
 
@@ -130,7 +130,7 @@ class AXI4LiteMaster(BusDriver):
             AXIProtocolError: If write response from AXI is not ``OKAY``.
         """
         if sync:
-            yield RisingEdge(self.clock)
+            await RisingEdge(self.clock)
 
         c_addr = cocotb.fork(self._send_write_address(address,
                                                       delay=address_latency))
@@ -139,19 +139,20 @@ class AXI4LiteMaster(BusDriver):
                                                    delay=data_latency))
 
         if c_addr:
-            yield c_addr.join()
+            await c_addr.join()
         if c_data:
-            yield c_data.join()
+            await c_data.join()
 
         # Wait for the response
         while True:
-            yield ReadOnly()
+            await ReadOnly()
             if self.bus.BVALID.value and self.bus.BREADY.value:
                 result = self.bus.BRESP.value
                 break
-            yield RisingEdge(self.clock)
+            await RisingEdge(self.clock)
 
-        yield RisingEdge(self.clock)
+        await RisingEdge(self.clock)
+        import pdb; pdb.set_trace()
 
         if int(result):
             raise AXIProtocolError("Write to address 0x%08x failed with BRESP: %d"
