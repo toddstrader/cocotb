@@ -65,7 +65,7 @@ class AXI4LiteMaster(BusDriver):
         self.read_address_busy = Lock("%s_rabusy" % name)
         self.write_data_busy = Lock("%s_wbusy" % name)
 
-    @cocotb.coroutine
+    #@cocotb.coroutine
     async def _send_write_address(self, address, delay=0):
         """
         Send the write address, with optional delay (in clocks)
@@ -86,7 +86,7 @@ class AXI4LiteMaster(BusDriver):
         self.bus.AWVALID <= 0
         self.write_address_busy.release()
 
-    @cocotb.coroutine
+    #@cocotb.coroutine
     async def _send_write_data(self, data, delay=0, byte_enable=0xF):
         """Send the write address, with optional delay (in clocks)."""
         await self.write_data_busy.acquire()
@@ -106,7 +106,7 @@ class AXI4LiteMaster(BusDriver):
         self.bus.WVALID <= 0
         self.write_data_busy.release()
 
-    @cocotb.coroutine
+    #@cocotb.coroutine
     async def write(self, address, value, byte_enable=0xf, address_latency=0,
               data_latency=0, sync=True):
         """Write a value to an address.
@@ -153,6 +153,7 @@ class AXI4LiteMaster(BusDriver):
 
         await RisingEdge(self.clock)
         import pdb; pdb.set_trace()
+        raise TypeError
 
         if int(result):
             raise AXIProtocolError("Write to address 0x%08x failed with BRESP: %d"
@@ -160,7 +161,7 @@ class AXI4LiteMaster(BusDriver):
 
         return result
 
-    @cocotb.coroutine
+    #@cocotb.coroutine
     async def read(self, address, sync=True):
         """Read from an address.
 
@@ -261,7 +262,7 @@ class AXI4Slave(BusDriver):
             return 2 ** AxSIZE
         return None
 
-    @cocotb.coroutine
+    #@cocotb.coroutine
     async def _write_data(self):
         clock_re = RisingEdge(self.clock)
 
@@ -310,7 +311,7 @@ class AXI4Slave(BusDriver):
                         break
                 await clock_re
 
-    @cocotb.coroutine
+    #@cocotb.coroutine
     async def _read_data(self):
         clock_re = RisingEdge(self.clock)
 
