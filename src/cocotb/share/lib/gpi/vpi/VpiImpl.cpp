@@ -193,6 +193,8 @@ GpiObjHdl *VpiImpl::create_gpi_obj_from_handle(vpiHandle new_hdl,
     // vpiRefObj is a reference/alias (e.g. an interface passed through a
     // module port). Resolve via vpiActual to determine the real type rather
     // than assuming any particular type.
+    std::string resolved_fq_name = fq_name;
+    vpiHandle resolved_hdl = NULL;
     if (type == vpiRefObj) {
         vpiHandle actual_hdl = vpi_handle(vpiActual, new_hdl);
         if (actual_hdl == NULL) {
@@ -200,10 +202,29 @@ GpiObjHdl *VpiImpl::create_gpi_obj_from_handle(vpiHandle new_hdl,
                      fq_name.c_str());
             return NULL;
         }
-        type = vpi_get(vpiType, actual_hdl);
-        vpi_free_object(actual_hdl);
-        LOG_DEBUG("VPI: Resolved vpiRefObj %s to type %d", fq_name.c_str(),
-                  type);
+
+        if (vpi_get(vpiType, actual_hdl) == vpiModport) {
+            vpiHandle iface_hdl = vpi_handle(vpiInterface, actual_hdl);
+            if (iface_hdl == NULL) {
+                LOG_WARN("VPI: Could not resolve vpiInterface for modport %s",
+                         fq_name.c_str());
+                vpi_free_object(actual_hdl);
+                return NULL;
+            }
+            vpi_free_object(actual_hdl);
+            actual_hdl = iface_hdl;
+        }
+
+        resolved_hdl = actual_hdl;
+        new_hdl = actual_hdl;
+        type = vpi_get(vpiType, new_hdl);
+
+        if (const char *full_name = vpi_get_str(vpiFullName, new_hdl)) {
+            resolved_fq_name = full_name;
+        }
+        LOG_DEBUG("VPI: Resolved vpiRefObj %s to %s(%d) at %s", fq_name.c_str(),
+                  vpi_get_str(vpiType, new_hdl), type,
+                  resolved_fq_name.c_str());
     }
 
     /* What sort of instance is this ?*/
@@ -340,10 +361,11 @@ GpiObjHdl *VpiImpl::create_gpi_obj_from_handle(vpiHandle new_hdl,
                 LOG_WARN("VPI: Simulator does not know this type (%d) via VPI",
                          type);
             }
+            if (resolved_hdl) vpi_free_object(resolved_hdl);
             return NULL;
     }
 
-    new_obj->initialise(name, fq_name);
+    new_obj->initialise(name, resolved_fq_name);
 
     LOG_DEBUG("VPI: Created GPI object from type %s(%d)",
               vpi_get_str(vpiType, new_hdl), type);
